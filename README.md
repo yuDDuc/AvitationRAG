@@ -1,113 +1,118 @@
-# Aviation AI Assistant - Backend RAG
+# Aviation AI Assistant
 
-Dự án xây dựng hệ thống **Chatbot RAG (Retrieval-Augmented Generation)** chuyên dụng cho Đào tạo Hàng không. Hệ thống được thiết kế với mục tiêu mang lại câu trả lời chính xác dựa trên tài liệu đào tạo nội bộ, bảo mật thông tin và tối ưu hóa tốc độ phản hồi cực nhanh.
+Dự án phát triển hệ thống Chatbot RAG (Retrieval-Augmented Generation) phục vụ công tác đào tạo hàng không. Hệ thống giúp trích xuất và trả lời câu hỏi dựa trên tài liệu nội bộ, ưu tiên bảo mật dữ liệu và tối ưu tốc độ xử lý.
 
 ---
 
-## 🌟 Các tính năng nổi bật đã thực hiện
+## Tính năng chính
 
-### 1. Xử lý Tài liệu Đa định dạng (Document Processing)
-- Hỗ trợ trích xuất văn bản từ các định dạng phổ biến: **PDF**, **DOCX (Word)**, và **PPTX (Slide PowerPoint)**.
-- Tự động làm sạch dữ liệu (loại bỏ ký tự rác, khoảng trắng thừa).
-- Chunking thông minh sử dụng `RecursiveCharacterTextSplitter` giúp giữ nguyên ngữ cảnh.
+### 1. Xử lý tài liệu (Document Processing)
+- Hỗ trợ các định dạng: PDF, DOCX, PPTX.
+- Tự động clean data (loại bỏ khoảng trắng thừa, ký tự rác).
+- Sử dụng `RecursiveCharacterTextSplitter` để chia nhỏ văn bản (chunking) nhưng vẫn giữ được ngữ cảnh.
 
 ### 2. Kiến trúc Hybrid RAG & Vector Database
 - Sử dụng **FAISS** để lưu trữ vector hoàn toàn tại Local, đảm bảo dữ liệu nội bộ không bị rò rỉ ra ngoài.
 - Dùng **HuggingFace Embeddings** (`paraphrase-multilingual-MiniLM-L12-v2`) để tạo vector semantic, hỗ trợ tiếng Việt cực tốt mà không tốn phí API.
 - Tích hợp **Gemini API** (`gemini-flash-latest`) để tổng hợp câu trả lời thông minh dựa trên Strict Context (chỉ trả lời dựa trên tài liệu, không "ảo giác").
 
-### 3. Tối ưu hóa Tốc độ Phản hồi (High Performance)
-- **Streaming Response:** Trả về kết quả dạng Event-Stream (như ChatGPT), giúp giảm Time-To-First-Token (TTFT) xuống cực thấp. Người dùng thấy chữ xuất hiện ngay lập tức.
-- **Semantic Cache:** Sử dụng FAISS độc lập làm bộ nhớ đệm. Nếu câu hỏi tương đồng > 85% với câu đã hỏi trước đó, hệ thống trả về kết quả Cache ngay lập tức (0ms) mà không cần gọi API LLM.
-- **Context Compression:** Nén và giới hạn ngữ cảnh (chỉ gửi tối đa 3000 ký tự quan trọng nhất lên LLM), giúp giảm chi phí Token và tăng tốc độ đọc của AI.
+### 3. Tối ưu hiệu năng
+- **Streaming Response:** Trả kết quả về client dạng stream (SSE) để giảm độ trễ.
+- **Semantic Cache:** Lưu lại kết quả truy vấn vào FAISS. Nếu câu hỏi mới giống > 85% câu cũ, trả về ngay từ cache (0ms) mà không gọi LLM.
+- **Context Compression:** Rút gọn nội dung context trước khi gửi cho LLM (tối đa 3000 ký tự) để tiết kiệm token và tăng tốc độ xử lý.
 
-### 4. Tiện ích Đào tạo & Bảo mật
-- **Tự động tạo Quiz:** AI đọc tài liệu và tự động sinh bộ câu hỏi trắc nghiệm (4 lựa chọn, có đáp án và giải thích).
-- **Gợi ý câu hỏi liên quan:** Sau mỗi câu trả lời, chatbot gợi ý thêm 3 câu hỏi liên quan để điều hướng học viên.
-- **Bảo mật (Prompt Sanitization):** Kiểm tra và chặn các hành vi cố tình Jailbreak hoặc thao túng Prompt (Prompt Injection).
-- **Phản hồi & Thống kê:** Lưu trữ đánh giá của học viên về chất lượng câu trả lời.
+### 4. Tiện ích & Bảo mật
+- **Tạo Quiz tự động:** LLM tự động sinh câu hỏi trắc nghiệm (có đáp án và giải thích) từ tài liệu học.
+- **Gợi ý câu hỏi:** Tự động tạo 3 câu hỏi follow-up sau mỗi câu trả lời.
+- **Prompt Sanitization:** Có cơ chế check và chặn các truy vấn cố tình jailbreak hoặc prompt injection.
+- **Feedback System:** API lưu lại đánh giá của người dùng để cải thiện chất lượng AI.
 
 ---
 
-## 🚀 Hướng dẫn Cài đặt & Khởi chạy
+## Cài đặt & Chạy local
 
-### Cài đặt môi trường
-Đảm bảo bạn đã cài đặt Python. Mở terminal tại thư mục `backend`:
+### 1. Cài package
+Yêu cầu: Python 3.9+.
 ```bash
+cd backend
 pip install -r requirements.txt
 ```
 
-### Cấu hình API Key
-Tạo file `backend/.env` bằng cách copy (hoặc đổi tên) từ file `.env.example` ở thư mục gốc:
+### 2. Cấu hình biến môi trường
+Tạo file `.env` trong thư mục `backend`:
 ```bash
 cp .env.example backend/.env
 ```
-Sau đó mở file `backend/.env` và điền API Key của Google Gemini:
+Mở `backend/.env` và cấu hình API key:
 ```env
 GOOGLE_API_KEY=your_api_key_here
 GOOGLE_LLM_MODEL=pickone
 ```
 
-### Khởi chạy Server
+### 3. Chạy Backend
 ```bash
 cd backend
 python -m uvicorn main:app --reload --port 8000
 ```
+API Docs (Swagger UI) sẽ có tại: `http://127.0.0.1:8000/docs`
 
-### Giao diện Kiểm thử (Frontend)
-Bạn có thể chạy giao diện Frontend bằng 1 trong 2 cách sau:
-- **Cách 1 (Đơn giản nhất):** Mở trực tiếp file `frontend/index.html` bằng trình duyệt (nhấp đúp vào file).
-- **Cách 2 (Khuyên dùng):** Sử dụng extension **Live Server** trên VS Code. Chuột phải vào file `frontend/index.html` và chọn "Open with Live Server" để chạy.
-- **Cách 3: ** Mở terminal tại thư mục `frontend` và chạy lệnh:
-```bash
-cd frontend
-python -m http.server 8080
-```
+### 4. Truy cập giao diện (Frontend)
+Bạn có thể mở giao diện bằng 1 trong các cách sau:
+- **Cách nhanh nhất:** Truy cập `http://127.0.0.1:8000/frontend/` (backend đã tích hợp sẵn để serve thư mục frontend).
+- Mở file `frontend/index.html` trực tiếp trên trình duyệt.
+- Dùng extension Live Server trên VS Code.
+- Chạy http server độc lập:
+  ```bash
+  cd frontend
+  python -m http.server 8080
+  ```
+
 ---
 
-## 📡 Danh sách API Endpoints
+## API Endpoints cơ bản
 
-Hệ thống cung cấp RESTful API đầy đủ, tích hợp Swagger UI. Bạn có thể xem và test trực tiếp tại: `http://127.0.0.1:8000/docs`.
+Dưới đây là một số route chính. Để xem chi tiết payload/response, vui lòng check Swagger UI.
 
-### 1. Documents API (`/api/v1/documents`)
-| Method   | Endpoint                | Mô tả                                         | Payload/Params                                     |
-| :---------| :------------------------| :----------------------------------------------| :---------------------------------------------------|
-| `POST`   | `/upload`               | Tải lên 1 file tài liệu và nạp vào FAISS      | `file` (File), `subject` (string)                  |
-| `POST`   | `/upload-batch`         | Tải lên hàng loạt nhiều file cùng lúc         | `files` (Array File), `subject` (string)           |
-| `POST`   | `/ingest-folder`        | Quét và nạp toàn bộ file từ thư mục Local     | JSON: `{ "folder_path": "...", "subject": "..." }` |
-| `GET`    | `/`                     | Lấy danh sách tài liệu hiện có trong hệ thống | -                                                  |
-| `POST`   | `/clear-semantic-cache` | Xóa bộ nhớ đệm semantic                       | -                                                  |
-| `POST`   | `/clear-all-data`       | Xóa toàn bộ dữ liệu vector và index           | -                                                  |
-| `DELETE` | `/{subject}`            | Xóa dữ liệu của một môn học cụ thể            | -                                                  |
+**Tài liệu (`/api/v1/documents`)**
+- `POST /upload` - Upload và xử lý 1 file.
+- `POST /upload-batch` - Upload nhiều file cùng lúc.
+- `POST /ingest-folder` - Quét và nạp toàn bộ file từ một thư mục ở local.
+- `GET /` - Lấy danh sách tài liệu đang có.
+- `POST /clear-semantic-cache` - Xóa bộ nhớ đệm semantic.
+- `POST /clear-all-data` - Xóa toàn bộ database.
+- `DELETE /{subject}` - Xóa dữ liệu của một môn cụ thể.
 
-### 2. Chat API (`/api/v1/chat`)
-| Method | Endpoint | Mô tả | Payload |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/completions` | Hỏi đáp với RAG. Trả về luồng Streaming (Server-Sent Events) | JSON: `{ "message": "Câu hỏi", "subject": "Tên môn" }` |
+**Chat (`/api/v1/chat`)**
+- `POST /completions` - Gửi câu hỏi, nhận luồng stream trả lời.
 
-### 3. Chat History API (`/api/v1/chat-history`)
-| Method | Endpoint | Mô tả | Payload/Params |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/sessions` | Tạo phiên chat mới | JSON: `{ "subject": "Tên môn" }` |
-| `GET` | `/sessions` | Lấy danh sách phiên chat | - |
-| `GET` | `/sessions/{id}/messages`| Lấy lịch sử tin nhắn trong 1 phiên | - |
-| `PATCH` | `/sessions/{id}` | Cập nhật tên phiên chat | JSON: `{ "title": "Tên mới" }` |
-| `DELETE`| `/sessions/{id}` | Xóa một phiên chat | - |
+**Lịch sử (`/api/v1/chat-history`)**
+- `POST /sessions` - Tạo phiên chat mới.
+- `GET /sessions` - Lấy danh sách phiên chat.
+- `GET /sessions/{id}/messages` - Lấy lịch sử tin nhắn của 1 phiên.
+- `DELETE /sessions/{id}` - Xóa một phiên chat.
 
-### 4. Quiz API (`/api/v1/quiz`)
-| Method | Endpoint | Mô tả | Payload |
-| :--- | :--- | :--- | :--- |
+**Quiz (`/api/v1/quiz`)**
+- `POST /generate` - Sinh trắc nghiệm từ tài liệu môn học.
+- `POST /save` - Lưu bộ câu hỏi.
+- `GET /list` - Lấy danh sách quiz đã lưu.
+- `GET /{filename}` - Xem chi tiết một bài quiz.
+
+**Feedback (`/api/v1/feedback`)**
+- `POST /` - Lưu đánh giá (hữu ích / không hữu ích) của người dùng.
+- `GET /stats` - Xem thống kê tổng quan.
+- `GET /unhelpful` - Lấy danh sách các câu trả lời bị đánh giá tệ.
+- `GET /gap-analysis` - Phân tích lỗ hổng kiến thức để đề xuất bổ sung tài liệu.| :--- | :--- | :--- |
 | `POST` | `/generate` | Sinh câu hỏi trắc nghiệm từ tài liệu môn học | JSON: `{ "subject": "Môn học", "level": "độ khó", "num_questions": 5 }` |
 | `POST` | `/save` | Lưu bài tập trắc nghiệm | JSON: `{ "filename": "...", "quiz_data": {...} }` |
 | `GET` | `/list` | Liệt kê các bài tập đã lưu | - |
 | `GET` | `/{filename}` | Lấy nội dung chi tiết bài tập | - |
 
 ### 5. Feedback API (`/api/v1/feedback`)
-| Method | Endpoint | Mô tả | Payload/Params |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/` | Lưu phản hồi đánh giá của học viên | JSON: `{ "question": "...", "answer": "...", "is_useful": true }` |
-| `GET` | `/stats` | Lấy thống kê tổng số phản hồi và tỷ lệ hài lòng | - |
-| `GET` | `/unhelpful` | Liệt kê các câu hỏi bị đánh giá không hữu ích | - |
-| `GET` | `/gap-analysis` | Phân tích lỗ hổng kiến thức và đề xuất bổ sung | - |
+| Method | Endpoint        | Mô tả                                           | Payload/Params                                                    |
+| :-------| :----------------| :------------------------------------------------| :------------------------------------------------------------------|
+| `POST` | `/`             | Lưu phản hồi đánh giá của học viên              | JSON: `{ "question": "...", "answer": "...", "is_useful": true }` |
+| `GET`  | `/stats`        | Lấy thống kê tổng số phản hồi và tỷ lệ hài lòng | -                                                                 |
+| `GET`  | `/unhelpful`    | Liệt kê các câu hỏi bị đánh giá không hữu ích   | -                                                                 |
+| `GET`  | `/gap-analysis` | Phân tích lỗ hổng kiến thức và đề xuất bổ sung  | -                                                                 |
 
 ---
