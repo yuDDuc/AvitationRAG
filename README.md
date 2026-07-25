@@ -120,15 +120,3 @@ Nếu bạn muốn tinh chỉnh cách hệ thống chia nhỏ văn bản (chunki
 Trong hàm `chunk_text`, hãy điều chỉnh các thông số `chunk_size`, `chunk_overlap` hoặc đặc biệt là mảng `separators` của `RecursiveCharacterTextSplitter` để ưu tiên các dấu phân tách theo cấu trúc văn bản của bạn. Ví dụ: `separators=["\n\nĐiều ", "\n\nKhoản ", "\n\n", "\n", " ", ""]`.
 
 ---
-
-## 💡 Giảm Hallucination với Re-ranking (Đề xuất)
-
-Để giảm thiểu hallucination (model bịa thông tin), một kỹ thuật rất hiệu quả là **Re-ranking (Xếp hạng lại)** các tài liệu đã được truy xuất.
-
-**Cách hoạt động:** Sau khi hệ thống Vector Database (FAISS) tìm ra một tập hợp các đoạn văn bản có thể liên quan, một mô hình nhỏ hơn, chuyên biệt hơn (thường là một cross-encoder) sẽ được sử dụng để "xếp hạng lại" (re-rank) các đoạn này. Nó sẽ đánh giá độ liên quan thực sự của từng đoạn với câu hỏi của người dùng và chỉ chọn ra những đoạn **thực sự liên quan nhất** để đưa vào ngữ cảnh cho LLM.
-
-**Lợi ích:**
--   **Giảm Hallucination:** Loại bỏ các đoạn văn bản nhiễu hoặc kém liên quan, giúp LLM tập trung hơn vào thông tin cốt lõi.
--   **Tăng tốc độ:** Giảm lượng token ngữ cảnh gửi lên LLM, giúp LLM xử lý nhanh hơn và giảm chi phí.
-
-Nếu bạn muốn triển khai tính năng này, tôi có thể bắt đầu bằng cách thêm một `RerankerService` vào Backend.
