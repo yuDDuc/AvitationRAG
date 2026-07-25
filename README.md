@@ -111,12 +111,3 @@ Hệ thống cung cấp RESTful API đầy đủ, tích hợp Swagger UI. Bạn 
 | `GET` | `/gap-analysis` | Phân tích lỗ hổng kiến thức và đề xuất bổ sung | - |
 
 ---
-## 📝 Ghi chú: Tùy chỉnh Chunking cho Văn bản Pháp luật
-
-Nếu bạn muốn tinh chỉnh cách hệ thống chia nhỏ văn bản (chunking) để tối ưu cho cấu trúc đặc thù của tài liệu pháp luật (ví dụ: chia theo "Điều", "Khoản"), bạn có thể chỉnh sửa logic trong file:
-
-`backend/app/services/document_service.py`
-
-Trong hàm `chunk_text`, hãy điều chỉnh các thông số `chunk_size`, `chunk_overlap` hoặc đặc biệt là mảng `separators` của `RecursiveCharacterTextSplitter` để ưu tiên các dấu phân tách theo cấu trúc văn bản của bạn. Ví dụ: `separators=["\n\nĐiều ", "\n\nKhoản ", "\n\n", "\n", " ", ""]`.
-
----
