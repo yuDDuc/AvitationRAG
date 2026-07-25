@@ -1,0 +1,35 @@
+{
+    "timestamp": "2026-07-25T13:16:30.046363",
+    "measurements": [
+        {
+            "question": "Xin chào",
+            "time_to_first_token_sec": 2.2739,
+            "total_time_sec": 8.09,
+            "response_length": 354
+        },
+        {
+            "question": "Thế nào là an toàn bay?",
+            "time_to_first_token_sec": 2.0938,
+            "total_time_sec": 31.1994,
+            "response_length": 1580
+        },
+        {
+            "question": "Phi công chỉ huy (PIC) là ai?",
+            "time_to_first_token_sec": 2.1217,
+            "total_time_sec": 14.554,
+            "response_length": 297
+        },
+        {
+            "question": "Hoạt động nào KHÔNG được liệt kê là một thực hành an toàn vận hành?",
+            "time_to_first_token_sec": 2.1631,
+            "total_time_sec": 22.4549,
+            "response_length": 335
+        },
+        {
+            "question": "ATC là gì?",
+            "time_to_first_token_sec": 2.1549,
+            "total_time_sec": 27.5996,
+            "response_length": 1292
+        }
+    ]
+}

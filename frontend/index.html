@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aviation AI Assistant - OJT Project</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --primary-color: #1a73e8;
+            --bg-color: #f8f9fa;
+            --chat-bg: #ffffff;
+            --sidebar-bg: #202124;
+            --text-light: #ffffff;
+            --text-dark: #3c4043;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+        body { display: flex; height: 100vh; background-color: var(--bg-color); }
+
+        /* Sidebar Styles */
+        #sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            color: var(--text-light);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 10px;
+        }
+
+        .sidebar-header { font-size: 1.2rem; font-weight: bold; margin-bottom: 30px; padding: 0 10px; color: #4285f4; }
+
+        .nav-item {
+            padding: 12px 15px;
+            margin-bottom: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-item:hover { background-color: #3c4043; }
+        .nav-item.active { background-color: var(--primary-color); }
+        .history-section { flex: 1; margin-top: 20px; padding: 0 6px; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+        .history-header { display: flex; align-items: center; justify-content: space-between; color: #bdc1c6; font-size: 0.8rem; padding: 0 4px 8px; }
+        .history-list { overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+        .history-item { border: none; background: transparent; color: #e8eaed; text-align: left; padding: 9px 10px; border-radius: 6px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .history-item:hover { background-color: #3c4043; }
+        .history-item.active { background-color: #174ea6; }
+        .new-chat-btn { border: 1px solid #5f6368; background: transparent; color: #e8eaed; border-radius: 6px; padding: 8px 10px; cursor: pointer; width: 100%; margin-top: 10px; text-align: left; }
+        .new-chat-btn:hover { background-color: #3c4043; }
+
+        /* Main Content */
+        #main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* View Containers */
+        .view-container {
+            display: none;
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .view-container.active { display: flex; flex-direction: column; }
+
+        /* Chat View */
+        #chat-window {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message { max-width: 80%; padding: 12px 16px; border-radius: 15px; line-height: 1.5; position: relative; }
+        .user-message { align-self: flex-end; background-color: var(--primary-color); color: white; border-bottom-right-radius: 2px; }
+        .bot-message { align-self: flex-start; background-color: #e8eaed; color: var(--text-dark); border-bottom-left-radius: 2px; }
+        .bot-message p { margin-bottom: 0.5em; line-height: 1.5; }
+        .bot-message ul, .bot-message ol { margin-left: 1.5em; margin-bottom: 0.5em; }
+        .bot-message li { margin-bottom: 0.25em; }
+        .bot-message h1, .bot-message h2, .bot-message h3, .bot-message h4, .bot-message h5, .bot-message h6 { margin-top: 1em; margin-bottom: 0.5em; font-weight: bold; }
+        .bot-message h1 { font-size: 1.8em; }
+        .bot-message h2 { font-size: 1.5em; }
+        .bot-message h3 { font-size: 1.2em; }
+        .bot-message code { background-color: rgba(0, 0, 0, 0.05); padding: 0.1em 0.3em; border-radius: 3px; font-family: 'Consolas', 'monospace'; }
+        .bot-message pre { background-color: rgba(0, 0, 0, 0.05); padding: 0.5em; border-radius: 5px; overflow-x: auto; font-family: 'Consolas', 'monospace'; }
+
+        .sources { font-size: 0.8rem; margin-top: 8px; color: #5f6368; border-top: 1px solid #dadce0; padding-top: 5px; }
+
+        #input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #dadce0;
+            display: flex;
+            gap: 10px;
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #dadce0;
+            border-radius: 24px;
+            outline: none;
+            font-size: 1rem;
+        }
+
+        #send-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Other Views (Documents, Quiz) */
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); margin-bottom: 20px; }
+        input[type="text"], input[type="file"], select { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #dadce0; border-radius: 4px; }
+        #chat-subject { width: 180px; margin: 0; border-radius: 24px; flex: 0 0 180px; }
+        .suggested-questions { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+        .suggested-question { border: 1px solid #dadce0; background: #fff; color: var(--primary-color); text-align: left; padding: 8px 10px; border-radius: 6px; cursor: pointer; }
+        .suggested-question:hover { background: #f1f3f4; }
+        button.btn-primary { background: var(--primary-color); color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+        
+        .feedback-container { margin-top: 10px; display: flex; gap: 15px; align-items: center; font-size: 0.9em; color: #5f6368; border-top: 1px dashed #dadce0; padding-top: 8px; }
+        .feedback-btn { border: none; background: none; cursor: pointer; color: #5f6368; display: flex; align-items: center; gap: 5px; transition: color 0.2s; font-size: 0.95em; }
+        .feedback-btn:hover { color: var(--primary-color); }
+        .feedback-btn.down:hover { color: #d93025; }
+
+        /* Autocomplete Styles */
+        .autocomplete-container { position: relative; width: 100%; }
+        .autocomplete-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #dadce0;
+            border-top: none;
+            z-index: 1000;
+            max-height: 200px;
+            overflow-y: auto;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: none;
+        }
+        .suggestion-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item:hover { background-color: #f1f3f4; color: var(--primary-color); }
+
+        pre { background: #f1f3f4; padding: 10px; border-radius: 4px; overflow-x: auto; margin-top: 10px; white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div id="sidebar">
+        <div class="sidebar-header"><i class="fas fa-plane-departure"></i> Aviation AI</div>
+        
+        <div class="nav-item active" onclick="showView('chat')">
+            <i class="fas fa-comments"></i> Hỏi đáp (Chat)
+        </div>
+        
+        <div class="nav-item" onclick="showView('documents')">
+            <i class="fas fa-file-upload"></i> Quản lý Tài liệu
+        </div>
+        
+        <div class="nav-item" onclick="showView('quiz')">
+            <i class="fas fa-lightbulb"></i> Ôn tập (Quiz)
+        </div>
+        
+        <div class="nav-item" onclick="showView('analytics')">
+            <i class="fas fa-chart-bar"></i> Thống kê
+        </div>
+
+        <div class="nav-item" onclick="showView('settings')">
+            <i class="fas fa-cog"></i> Cài đặt
+        </div>
+
+        <button class="new-chat-btn" onclick="createNewChat()">
+            <i class="fas fa-plus"></i> New chat
+        </button>
+
+        <div class="history-section">
+            <div class="history-header">
+                <span>Lịch sử chat</span>
+            </div>
+            <div id="chat-history-list" class="history-list"></div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main-content">
+        
+        <!-- Chat View -->
+        <div id="chat-view" class="view-container active">
+            <div id="chat-window">
+                <!-- Tin nhắn chào mừng sẽ được thêm bằng JS -->
+            </div>
+            <div id="input-area">
+                <select id="chat-subject">
+                    <option value="">Chọn môn</option>
+                </select>
+                <input type="text" id="user-input" placeholder="Nhập câu hỏi của bạn tại đây...">
+                <button id="send-btn"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+
+        <!-- Documents View -->
+        <div id="documents-view" class="view-container">
+            <h2>Tải lên tài liệu</h2>
+            <div class="card">
+                <label>Môn học:</label>
+                <input type="text" id="doc-subject" placeholder="Ví dụ: An toàn bay">
+                <label>Chọn file (.pdf, .docx, .pptx):</label>
+                <input type="file" id="doc-file">
+                <button class="btn-primary" onclick="uploadFile()">Upload & Ingest</button>
+                <div id="upload-status"></div>
+            </div>
+
+            <div class="card">
+                <h3>Danh sách tài liệu đã nạp</h3>
+                <div id="doc-count"></div>
+                <div id="doc-list">Đang tải...</div>
+            </div>
+        </div>
+
+        <!-- Quiz View -->
+        <div id="quiz-view" class="view-container">
+            <h2>Sinh câu hỏi ôn tập</h2>
+            <div class="card">
+                <label>Chọn môn học:</label>
+                <div class="autocomplete-container">
+                    <input type="text" id="quiz-subject" placeholder="An toàn bay" autocomplete="off">
+                    <div id="quiz-suggestions" class="autocomplete-suggestions"></div>
+                </div>
+                <label>Số lượng câu hỏi:</label>
+                <input type="number" id="quiz-count" value="5">
+                <button class="btn-primary" onclick="generateQuiz()">Sinh Quiz</button>
+            </div>
+            
+            <!-- Result container with Save button -->
+            <div id="quiz-result-container" class="card" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3>Kết quả Quiz</h3>
+                    <button id="save-quiz-btn" class="btn-primary" onclick="saveQuiz()" style="background-color: #34a853;">Lưu Quiz này</button>
+                </div>
+                <div id="quiz-result"></div>
+            </div>
+
+            <!-- List of saved quizzes -->
+            <h2>Danh sách Quiz đã lưu</h2>
+            <div id="quiz-list" class="card">Đang tải...</div>
+        </div>
+
+        <div id="analytics-view" class="view-container">
+            <h2>Thống kê chất lượng AI</h2>
+            <div id="stats-content" class="card">Đang tải...</div>
+        </div>
+
+        <!-- Settings View -->
+        <div id="settings-view" class="view-container">
+            <h2>Cài đặt & Quản lý Dữ liệu</h2>
+            <div class="card">
+                <h3>Xóa Semantic Cache</h3>
+                <p>Xóa bộ nhớ đệm ngữ nghĩa. Lần hỏi tiếp theo sẽ gọi lại LLM.</p>
+                <button class="btn-primary" onclick="clearSemanticCache()">Xóa Cache</button>
+                <div id="clear-cache-status" style="margin-top: 10px;"></div>
+            </div>
+
+            <div class="card">
+                <h3>Xóa TOÀN BỘ Dữ liệu</h3>
+                <p style="color: red; font-weight: bold;">Cảnh báo: Thao tác này sẽ xóa tất cả tài liệu, Vector DB và Semantic Cache. Dữ liệu sẽ không thể khôi phục.</p>
+                <button class="btn-primary" style="background-color: red;" onclick="clearAllData()">Xóa Tất Cả</button>
+                <div id="clear-all-data-status" style="margin-top: 10px;"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
+    <script>
+        const API_BASE = "http://127.0.0.1:8000/api/v1";
+        const md = window.markdownit(); // Khởi tạo Markdown-it
+
+
+        function showView(viewName) {
+            document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(v => v.classList.remove('active'));
+            
+            document.getElementById(viewName + '-view').classList.add('active');
+            if (typeof event !== 'undefined' && event.currentTarget && event.currentTarget.classList.contains('nav-item')) {
+                event.currentTarget.classList.add('active');
+            }
+
+            if(viewName === 'documents') loadDocList();
+            if(viewName === 'analytics') loadStats();
+            if(viewName === 'quiz') {
+                loadQuizSubjects();
+                loadQuizList();
+            }
+        }
+
+        function activateChatView() {
+            document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(v => v.classList.remove('active'));
+            document.getElementById('chat-view').classList.add('active');
+            document.querySelector('.nav-item[onclick="showView(\'chat\')"]').classList.add('active');
+        }
+
+        const chatWindow = document.getElementById('chat-window');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatSubject = document.getElementById('chat-subject');
+        const chatHistoryList = document.getElementById('chat-history-list');
+        const USER_ID_KEY = 'aviation_ai_user_id';
+        let currentUserId = localStorage.getItem(USER_ID_KEY);
+        let currentSessionId = null;
+        if (!currentUserId) {
+            currentUserId = `web-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+            localStorage.setItem(USER_ID_KEY, currentUserId);
+        }
+
+        // Hàm appendMessage được định nghĩa toàn cục
+        function appendMessage(sender, text, sources = []) {
+            console.log(`[appendMessage] Thêm tin nhắn: sender=${sender}, text length=${text.length}, sources count=${sources.length}`);
+            const div = document.createElement('div');
+            div.className = `message ${sender}-message`;
+            
+            if (sender === 'bot') {
+                div.innerHTML = md.render(text); // Render Markdown cho bot messages
+            } else {
+                div.innerHTML = md.render(text); // User messages cũng render Markdown
+            }
+            
+            if(sources.length > 0) {
+                const sourceDiv = document.createElement('div');
+                sourceDiv.className = 'sources';
+                sourceDiv.innerHTML = "<b>Nguồn:</b> " + sources.map(s => `${s.source} (Trang ${s.page || 'N/A'})`).join(', ');
+                div.appendChild(sourceDiv);
+            }
+
+            chatWindow.appendChild(div);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            console.log(`[appendMessage] chatWindow hiện có ${chatWindow.children.length} tin nhắn.`);
+            return div;
+        }
+
+        function renderSuggestedQuestions(container, suggestions) {
+            if (!suggestions || suggestions.length === 0) return;
+
+            const suggestionsDiv = document.createElement('div');
+            suggestionsDiv.className = 'suggested-questions';
+            suggestions.forEach(question => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'suggested-question';
+                button.innerText = question;
+                button.onclick = () => {
+                    userInput.value = question;
+                    sendMessage();
+                };
+                suggestionsDiv.appendChild(button);
+            });
+            container.appendChild(suggestionsDiv);
+        }
+
+        function addFeedbackButtons(container, question, answer, subject = "Unknown") {
+            // Không hiển thị cho tin nhắn chào mừng (question rỗng)
+            if (!question || question.trim() === "") return;
+
+            const feedbackDiv = document.createElement('div');
+            feedbackDiv.className = 'feedback-container';
+
+            const textSpan = document.createElement('span');
+            textSpan.innerText = "Đánh giá câu trả lời này:";
+            feedbackDiv.appendChild(textSpan);
+
+            const btnUp = document.createElement('button');
+            btnUp.className = 'feedback-btn';
+            btnUp.innerHTML = '<i class="fas fa-thumbs-up"></i> Tốt';
+
+            const btnDown = document.createElement('button');
+            btnDown.className = 'feedback-btn down';
+            btnDown.innerHTML = '<i class="fas fa-thumbs-down"></i> Tệ';
+
+            const handleFeedback = async (isUseful) => {
+                try {
+                    const res = await fetch(`${API_BASE}/feedback/`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ question: question, answer: answer, is_useful: isUseful, subject: subject })
+                    });
+                    if (res.ok) {
+                        textSpan.innerText = "Cảm ơn bạn đã đánh giá!";
+                        btnUp.style.display = 'none';
+                        btnDown.style.display = 'none';
+                    } else {
+                        const data = await res.json();
+                        let errorMsg = data.detail || data.message || "Unknown error";
+                        if (Array.isArray(errorMsg)) errorMsg = JSON.stringify(errorMsg);
+                        alert("Lỗi khi gửi đánh giá: " + errorMsg);
+                    }
+                } catch(e) {
+                    alert("Lỗi kết nối khi gửi đánh giá: " + e.message);
+                }
+            };
+
+            btnUp.onclick = () => handleFeedback(true);
+            btnDown.onclick = () => handleFeedback(false);
+
+            feedbackDiv.appendChild(btnUp);
+            feedbackDiv.appendChild(btnDown);
+            container.appendChild(feedbackDiv);
+        }
+
+        async function loadChatSessions() {
+            try {
+                const res = await fetch(`${API_BASE}/chat-history/sessions?user_id=${encodeURIComponent(currentUserId)}`);
+                const data = await res.json();
+                chatHistoryList.innerHTML = '';
+
+                (data.sessions || []).forEach(session => {
+                    const itemContainer = document.createElement('div');
+                    itemContainer.style.display = 'flex';
+                    itemContainer.style.alignItems = 'center';
+                    itemContainer.style.gap = '5px';
+                    itemContainer.style.width = '100%';
+                    itemContainer.style.marginBottom = '5px';
+
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = `history-item ${session.id === currentSessionId ? 'active' : ''}`;
+                    button.innerText = session.title || 'New chat';
+                    button.title = `${session.title || 'New chat'} (${session.subject})`;
+                    button.style.flex = '1';
+                    button.style.marginBottom = '0'; // reset margin vì đã có container
+                    button.onclick = () => loadChatSession(session.id);
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.type = 'button';
+                    deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                    deleteBtn.title = 'Xóa session này';
+                    deleteBtn.style.background = 'none';
+                    deleteBtn.style.border = 'none';
+                    deleteBtn.style.color = '#9aa0a6';
+                    deleteBtn.style.cursor = 'pointer';
+                    deleteBtn.style.padding = '8px 5px';
+                    deleteBtn.style.visibility = 'hidden'; // Ẩn mặc định
+                    deleteBtn.style.transition = 'color 0.2s, visibility 0.2s';
+                    
+                    // Hiển thị nút xóa khi di chuột vào cả khung
+                    itemContainer.onmouseenter = () => deleteBtn.style.visibility = 'visible';
+                    itemContainer.onmouseleave = () => deleteBtn.style.visibility = 'hidden';
+
+                    deleteBtn.onmouseover = () => deleteBtn.style.color = '#ea4335';
+                    deleteBtn.onmouseout = () => deleteBtn.style.color = '#9aa0a6';
+                    
+                    deleteBtn.onclick = async (e) => {
+                        e.stopPropagation(); // Ngăn sự kiện click lan ra ngoài
+                        if (confirm('Bác có chắc muốn xóa lịch sử chat này không?')) {
+                            try {
+                                const delRes = await fetch(`${API_BASE}/chat-history/sessions/${session.id}?user_id=${encodeURIComponent(currentUserId)}`, {
+                                    method: 'DELETE'
+                                });
+                                if (delRes.ok) {
+                                    itemContainer.remove(); // Xóa khỏi UI ngay lập tức
+                                    // Nếu đang xem session này thì reset về màn hình New Chat
+                                    if (currentSessionId === session.id) {
+                                        createNewChat();
+                                    }
+                                } else {
+                                    alert('Lỗi hệ thống khi xóa chat.');
+                                }
+                            } catch (err) {
+                                alert('Lỗi mạng khi xóa chat.');
+                            }
+                        }
+                    };
+
+                    itemContainer.appendChild(button);
+                    itemContainer.appendChild(deleteBtn);
+                    chatHistoryList.appendChild(itemContainer);
+                });
+            } catch (e) {
+                console.error("Lỗi loadChatSessions:", e);
+            }
+        }
+
+        function createNewChat() {
+            activateChatView();
+            currentSessionId = null;
+            chatWindow.innerHTML = '';
+            appendMessage('bot', "Xin chào! Tôi là trợ lý học tập hàng không. Bạn cần tôi giải đáp kiến thức gì hôm nay?");
+            document.querySelectorAll('.history-item').forEach(item => item.classList.remove('active'));
+            userInput.focus();
+        }
+
+        async function loadChatSession(sessionId) {
+            try {
+                activateChatView();
+                const res = await fetch(`${API_BASE}/chat-history/sessions/${sessionId}/messages?user_id=${encodeURIComponent(currentUserId)}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+
+                currentSessionId = data.session.id;
+                if (data.session.subject) {
+                    if (![...chatSubject.options].some(option => option.value === data.session.subject)) {
+                        const option = document.createElement('option');
+                        option.value = data.session.subject;
+                        option.innerText = data.session.subject;
+                        chatSubject.appendChild(option);
+                    }
+                    chatSubject.value = data.session.subject;
+                }
+
+                chatWindow.innerHTML = '';
+                let lastUserMessage = "";
+                (data.messages || []).forEach(message => {
+                    const sender = message.role === 'user' ? 'user' : 'bot';
+                    if (sender === 'user') lastUserMessage = message.content;
+                    
+                    const messageDiv = appendMessage(sender, message.content, message.sources || []);
+                    if (sender === 'bot') {
+                        renderSuggestedQuestions(messageDiv, message.suggested_questions || []);
+                        const currentSubject = data.session.subject || chatSubject.value || "Unknown";
+                        addFeedbackButtons(messageDiv, lastUserMessage, message.content, currentSubject);
+                    }
+                });
+                loadChatSessions();
+            } catch (e) {
+                console.error("Lỗi loadChatSession:", e);
+                alert("Không tải được lịch sử chat này.");
+            }
+        }
+
+        async function sendMessage() {
+            console.log("[sendMessage] Bắt đầu gửi tin nhắn.");
+            const text = userInput.value.trim();
+            if(!text) {
+                console.log("[sendMessage] Text rỗng, không gửi.");
+                return;
+            }
+            const selectedSubject = chatSubject.value || "";
+
+            appendMessage('user', text);
+            userInput.value = '';
+
+            // Tạo khung chat cho bot
+            const div = document.createElement('div');
+            div.className = `message bot-message`;
+            chatWindow.appendChild(div);
+            console.log("[sendMessage] Khung bot message đã tạo và thêm vào chatWindow.");
+            
+            let messageContentDiv = document.createElement('div');
+            div.appendChild(messageContentDiv);
+            
+            let accumulatedMarkdownText = ""; // Biến để tích lũy toàn bộ Markdown text
+            let sourceDiv = null;
+
+            // Thêm AbortController để xử lý timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // Timeout sau 30 giây
+            console.log("[sendMessage] Request fetch bắt đầu (có timeout 30s).");
+
+            try {
+                const res = await fetch(`${API_BASE}/chat/completions`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ message: text, subject: selectedSubject, user_id: currentUserId, session_id: currentSessionId }),
+                    signal: controller.signal // Gắn signal vào fetch request
+                });
+                
+                clearTimeout(timeoutId); // Xóa timeout nếu request thành công
+                console.log("[sendMessage] Fetch request hoàn tất.");
+
+                if (!res.ok) {
+                    messageContentDiv.innerHTML = "Lỗi kết nối hoặc lỗi hệ thống.";
+                    console.error("[sendMessage] Fetch response NOT OK:", res.status, res.statusText);
+                    return;
+                }
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                console.log("[sendMessage] Bắt đầu xử lý stream...");
+                let currentEvent = 'message';
+                let buffer = '';
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) {
+                        console.log("[sendMessage] Stream hoàn tất.");
+                        // Khi stream kết thúc, đảm bảo render lại lần cuối để các block Markdown hoàn chỉnh
+                        messageContentDiv.innerHTML = md.render(accumulatedMarkdownText);
+                        
+                        // Thêm nút feedback
+                        const currentSubject = chatSubject.value || "Unknown";
+                        addFeedbackButtons(div, text, accumulatedMarkdownText, currentSubject);
+                        
+                        loadChatSessions();
+                        break;
+                    }
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Giữ lại dòng cuối cùng chưa hoàn chỉnh
+                    
+                    for (let line of lines) {
+                        if (!line.trim()) continue;
+
+                        if (line.startsWith('event: ')) {
+                            currentEvent = line.slice(7).trim();
+                            continue;
+                        }
+
+                        if (!line.startsWith('data: ')) continue;
+
+                        const data = line.slice(6);
+                        if (currentEvent === 'sources') {
+                            try {
+                                const sources = JSON.parse(data);
+                                if (sources.length > 0 && !sourceDiv) {
+                                    sourceDiv = document.createElement('div');
+                                    sourceDiv.className = 'sources';
+                                    sourceDiv.innerHTML = "<b>Nguồn:</b> " + sources.map(s => `${s.source} (Trang ${s.page || 'N/A'})`).join(', ');
+                                    div.appendChild(sourceDiv);
+                                }
+                            } catch(e) {
+                                console.error("[sendMessage] Lỗi parse sources JSON:", e, "Line:", line);
+                            }
+                            currentEvent = 'message';
+                            continue;
+                        }
+
+                        if (currentEvent === 'session') {
+                            try {
+                                const session = JSON.parse(data);
+                                currentSessionId = session.id;
+                            } catch(e) {
+                                console.error("[sendMessage] Lỗi parse session JSON:", e, "Line:", line);
+                            }
+                            currentEvent = 'message';
+                            continue;
+                        }
+
+                        if (currentEvent === 'suggestions') {
+                            try {
+                                renderSuggestedQuestions(div, JSON.parse(data));
+                            } catch(e) {
+                                console.error("[sendMessage] Lỗi parse suggestions JSON:", e, "Line:", line);
+                            }
+                            currentEvent = 'message';
+                            continue;
+                        }
+
+                        if (currentEvent === 'status') {
+                            currentEvent = 'message';
+                            continue;
+                        }
+
+                        if (currentEvent === 'error') {
+                            accumulatedMarkdownText += "\n\n**Lỗi sinh text.**";
+                            messageContentDiv.innerHTML = md.render(accumulatedMarkdownText);
+                            currentEvent = 'message';
+                            continue;
+                        }
+
+                        const decodedText = data.replace(/\\n/g, '\n');
+                        accumulatedMarkdownText += decodedText;
+                        messageContentDiv.innerHTML = md.render(accumulatedMarkdownText);
+                        chatWindow.scrollTop = chatWindow.scrollHeight;
+                    }
+                }
+            } catch (e) {
+                if (e.name === 'AbortError') {
+                    messageContentDiv.innerHTML = "Lỗi: Yêu cầu bị hủy do quá thời gian chờ (30 giây). Vui lòng thử lại sau.";
+                    console.error("[sendMessage] Timeout lỗi:", e);
+                } else {
+                    messageContentDiv.innerHTML = "Lỗi kết nối server: " + e.message;
+                    console.error("[sendMessage] Fetch catch lỗi:", e);
+                }
+            } finally {
+                clearTimeout(timeoutId); // Đảm bảo timeout luôn được xóa khi kết thúc
+                console.log("[sendMessage] Kết thúc xử lý tin nhắn.");
+            }
+        }
+        // Gán sự kiện sau khi hàm đã được định nghĩa
+        sendBtn.onclick = sendMessage;
+        userInput.onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
+
+        // --- Document Logic ---
+        async function uploadFile() {
+            const fileInput = document.getElementById('doc-file');
+            const subjectInput = document.getElementById('doc-subject');
+            const status = document.getElementById('upload-status');
+
+            if(!fileInput.files[0] || !subjectInput.value) return alert("Vui lòng nhập đủ thông tin");
+
+            status.innerText = "Đang xử lý... (Có thể mất vài giây)";
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('subject', subjectInput.value);
+
+            try {
+                const res = await fetch(`${API_BASE}/documents/upload`, { method: 'POST', body: formData });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || data.message || "Upload failed");
+                status.innerText = "✅ " + data.message;
+                loadDocList();
+            } catch (e) { status.innerText = "❌ Lỗi: " + e.message; }
+        }
+
+        async function loadDocList() {
+            const list = document.getElementById('doc-list');
+            const countSpan = document.getElementById('doc-count');
+            try {
+                const res = await fetch(`${API_BASE}/documents/`);
+                const data = await res.json();
+                const count = data.total_count !== undefined ? data.total_count : 0;
+                if(countSpan) countSpan.innerText = `(Tổng số: ${count})`;
+                availableSubjects = data.documents && data.documents.length
+                    ? [...new Set(data.documents.map(d => d.subject))]
+                    : [];
+                updateChatSubjectOptions();
+
+                list.innerHTML = ''; // Clear existing list
+                if (data.documents && data.documents.length) {
+                    // Group documents by subject
+                    const docsBySubject = data.documents.reduce((acc, doc) => {
+                        const subject = doc.subject || "Chưa phân loại";
+                        if (!acc[subject]) {
+                            acc[subject] = [];
+                        }
+                        acc[subject].push(doc.filename);
+                        return acc;
+                    }, {});
+
+                    for (const subject in docsBySubject) {
+                        const subjectDiv = document.createElement('div');
+                        subjectDiv.innerHTML = `<h4 style="font-weight: bold; margin-top: 15px; margin-bottom: 5px;">${subject.toUpperCase()}</h4>`;
+                        list.appendChild(subjectDiv);
+
+                        const ul = document.createElement('ul');
+                        ul.style.listStyleType = 'disc';
+                        ul.style.marginLeft = '20px';
+                        docsBySubject[subject].forEach(filename => {
+                            const li = document.createElement('li');
+                            li.innerText = filename;
+                            ul.appendChild(li);
+                        });
+                        list.appendChild(ul);
+                    }
+                } else {
+                    list.innerHTML = "Chưa có tài liệu nào.";
+                }
+            } catch (e) { 
+                list.innerText = "Lỗi tải danh sách: " + e.message; 
+                if(countSpan) countSpan.innerText = "";
+            }
+        }
+
+        // --- Quiz Logic ---
+        let availableSubjects = [];
+        let currentQuizData = null; // Biến toàn cục lưu kết quả quiz hiện tại
+
+        function updateChatSubjectOptions() {
+            const selectedValue = chatSubject.value;
+            chatSubject.innerHTML = '<option value="">Chọn môn</option>';
+            availableSubjects.forEach(subject => {
+                const option = document.createElement('option');
+                option.value = subject;
+                option.innerText = subject;
+                chatSubject.appendChild(option);
+            });
+            if (availableSubjects.includes(selectedValue)) {
+                chatSubject.value = selectedValue;
+            } else if (availableSubjects.length === 1) {
+                chatSubject.value = availableSubjects[0];
+            }
+        }
+
+        async function loadQuizSubjects() {
+            try {
+                const res = await fetch(`${API_BASE}/documents/`);
+                const data = await res.json();
+                
+                if (data.documents && data.documents.length) {
+                    availableSubjects = [...new Set(data.documents.map(d => d.subject))];
+                } else {
+                    availableSubjects = [];
+                }
+                updateChatSubjectOptions();
+            } catch (e) {
+                console.error("Lỗi loadQuizSubjects:", e);
+            }
+        }
+
+        // Xử lý Autocomplete cho Quiz Subject
+        const quizSubjectInput = document.getElementById('quiz-subject');
+        const quizSuggestionsDiv = document.getElementById('quiz-suggestions');
+
+        quizSubjectInput.addEventListener('input', function() {
+            const val = this.value.toLowerCase();
+            quizSuggestionsDiv.innerHTML = '';
+            
+            if (!val) {
+                quizSuggestionsDiv.style.display = 'none';
+                return;
+            }
+
+            const filtered = availableSubjects.filter(s => s.toLowerCase().includes(val));
+            
+            if (filtered.length > 0) {
+                filtered.forEach(sub => {
+                    const item = document.createElement('div');
+                    item.className = 'suggestion-item';
+                    item.innerText = sub;
+                    item.onclick = function() {
+                        quizSubjectInput.value = sub;
+                        quizSuggestionsDiv.style.display = 'none';
+                    };
+                    quizSuggestionsDiv.appendChild(item);
+                });
+                quizSuggestionsDiv.style.display = 'block';
+            } else {
+                quizSuggestionsDiv.style.display = 'none';
+            }
+        });
+
+        // Đóng gợi ý khi click ra ngoài
+        document.addEventListener('click', function(e) {
+            if (e.target !== quizSubjectInput) {
+                quizSuggestionsDiv.style.display = 'none';
+            }
+        });
+
+        async function generateQuiz() {
+            const subject = document.getElementById('quiz-subject').value;
+            const count = document.getElementById('quiz-count').value;
+            const result = document.getElementById('quiz-result');
+            const resultContainer = document.getElementById('quiz-result-container');
+            const saveBtn = document.getElementById('save-quiz-btn');
+
+            if(!subject) return alert("Vui lòng chọn một môn học");
+
+            resultContainer.style.display = 'block';
+            result.innerHTML = "Đang sinh câu hỏi... AI đang đọc tài liệu...";
+            currentQuizData = null;
+            saveBtn.style.display = 'none';
+
+            try {
+                const res = await fetch(`${API_BASE}/quiz/generate`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ subject: subject, num_questions: parseInt(count) })
+                });
+                
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    result.innerHTML = `<div style="color: red; padding: 10px; background: #ffebee; border-radius: 4px;"><b>Lỗi:</b> ${data.detail || 'Có lỗi xảy ra khi sinh quiz.'}</div>`;
+                    return;
+                }
+
+                if (data.quiz) {
+                    currentQuizData = data.quiz; // Lưu lại để dùng cho hàm save
+                    saveBtn.style.display = 'block';
+                    result.innerHTML = `<pre>${data.quiz}</pre>`;
+                } else {
+                    result.innerText = "AI không trả về nội dung câu hỏi.";
+                }
+            } catch (e) { 
+                result.innerText = "Lỗi kết nối: " + e.message; 
+            }
+        }
+
+        async function saveQuiz() {
+            const subject = document.getElementById('quiz-subject').value;
+            if (!currentQuizData) return alert("Không có dữ liệu quiz để lưu!");
+            
+            try {
+                const res = await fetch(`${API_BASE}/quiz/save`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ subject: subject, quiz_data: currentQuizData })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || data.message || "Lỗi lưu quiz");
+                
+                alert(`Đã lưu thành công! (Tên file: ${data.filename})`);
+                loadQuizList();
+            } catch (e) {
+                alert("Lỗi khi lưu: " + e.message);
+            }
+        }
+
+        async function loadQuizList() {
+            const listDiv = document.getElementById('quiz-list');
+            try {
+                const res = await fetch(`${API_BASE}/quiz/list`);
+                const data = await res.json();
+                
+                if (data.quizzes && data.quizzes.length > 0) {
+                    let html = '<ul style="list-style: none; padding: 0;">';
+                    // Sắp xếp quiz mới nhất lên đầu
+                    const sortedQuizzes = data.quizzes.sort((a, b) => b.created_at.localeCompare(a.created_at));
+                    
+                    sortedQuizzes.forEach(q => {
+                        html += `<li style="padding: 10px; border-bottom: 1px solid #dadce0; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <b>${q.subject}</b> 
+                                <span style="font-size: 0.8em; color: #5f6368; margin-left: 10px;">🕒 ${q.created_at}</span>
+                            </div>
+                            <button class="btn-primary" style="padding: 5px 15px; font-size: 0.9em; background-color: #1a73e8;" onclick="viewSavedQuiz('${q.filename}')">Xem lại</button>
+                        </li>`;
+                    });
+                    html += '</ul>';
+                    listDiv.innerHTML = html;
+                } else {
+                    listDiv.innerHTML = "Chưa có bài quiz nào được lưu.";
+                }
+            } catch (e) {
+                listDiv.innerHTML = "Lỗi tải danh sách quiz: " + e.message;
+            }
+        }
+
+        async function viewSavedQuiz(filename) {
+            try {
+                const res = await fetch(`${API_BASE}/quiz/${filename}`);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || "Lỗi tải quiz");
+                
+                const result = document.getElementById('quiz-result');
+                const resultContainer = document.getElementById('quiz-result-container');
+                const saveBtn = document.getElementById('save-quiz-btn');
+                
+                // Hiển thị nội dung
+                resultContainer.style.display = 'block';
+                saveBtn.style.display = 'none'; // Không hiển thị nút lưu khi xem lại
+                
+                // Format JSON cho dễ đọc
+                let formattedQuiz = typeof data.quiz === 'string' ? data.quiz : JSON.stringify(data.quiz, null, 2);
+                result.innerHTML = `<pre>${formattedQuiz}</pre>`;
+                
+                // Cuộn lên đầu khối kết quả
+                resultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+                currentQuizData = null; // Đặt về null vì không cần lưu lại nữa
+            } catch (e) {
+                alert("Lỗi tải chi tiết quiz: " + e.message);
+            }
+        }
+
+        // --- Analytics Logic ---
+        async function loadStats() {
+            const content = document.getElementById('stats-content');
+            try {
+                const res = await fetch(`${API_BASE}/feedback/stats`);
+                const data = await res.json();
+                content.innerHTML = `
+                    <p>Tổng số phản hồi: <b>${data.total_feedback}</b></p>
+                    <p>Hữu ích: <b>${data.useful_count}</b></p>
+                    <p>Tỷ lệ hài lòng: <b>${data.useful_rate}</b></p>
+                `;
+            } catch (e) { content.innerText = "Lỗi tải thống kê."; }
+        }
+
+        // --- Settings Logic ---
+        async function clearSemanticCache() {
+            const statusDiv = document.getElementById('clear-cache-status');
+            statusDiv.innerText = "Đang xóa cache...";
+            try {
+                const res = await fetch(`${API_BASE}/documents/clear-semantic-cache`, { method: 'POST' });
+                const data = await res.json();
+                statusDiv.innerText = `✅ ${data.message}`;
+            } catch (e) {
+                statusDiv.innerText = `❌ Lỗi: ${e.message}`;
+            }
+        }
+
+        async function clearAllData() {
+            const statusDiv = document.getElementById('clear-all-data-status');
+            if (!confirm("Bạn có chắc chắn muốn xóa TOÀN BỘ dữ liệu? Thao tác này không thể hoàn tác!")) {
+                statusDiv.innerText = "Đã hủy thao tác.";
+                return;
+            }
+            statusDiv.innerText = "Đang xóa toàn bộ dữ liệu...";
+            try {
+                const res = await fetch(`${API_BASE}/documents/clear-all-data`, { method: 'POST' });
+                const data = await res.json();
+                statusDiv.innerText = `✅ ${data.message}`;
+                loadDocList(); // Cập nhật lại danh sách tài liệu
+                document.getElementById('chat-window').innerHTML = ''; // Xóa sạch khung chat
+                initChat(); // Gọi lại initChat để load lại session trống và in câu chào
+            } catch (e) {
+                statusDiv.innerText = `❌ Lỗi: ${e.message}`;
+            }
+        }
+
+        // --- Initial Load ---
+        function initChat() {
+            appendMessage('bot', "Xin chào! Tôi là trợ lý học tập hàng không. Bạn cần tôi giải đáp kiến thức gì hôm nay?");
+            loadQuizSubjects();
+            loadChatSessions();
+        }
+
+        document.addEventListener('DOMContentLoaded', initChat);
+    </script>
+</body>
+</html>
