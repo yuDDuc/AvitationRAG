@@ -34,7 +34,6 @@ Dự án phát triển hệ thống Chatbot RAG (Retrieval-Augmented Generation)
 ### 1. Cài package
 Yêu cầu: Python 3.9+.
 ```bash
-cd backend
 pip install -r requirements.txt
 ```
 
