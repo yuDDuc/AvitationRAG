@@ -755,6 +755,7 @@
             chatWindow.innerHTML = '';
             appendMessage('bot', "Xin chào! Tôi là trợ lý học tập hàng không. Bạn cần tôi giải đáp kiến thức gì hôm nay?");
             document.querySelectorAll('.history-item').forEach(item => item.classList.remove('active'));
+            updateChatSubjectOptions();
             userInput.focus();
         }
 
@@ -766,6 +767,10 @@
                 const data = await res.json();
 
                 currentSessionId = data.session.id;
+                
+                // Reset dropdown options back to currently available subjects
+                updateChatSubjectOptions();
+
                 if (data.session.subject) {
                     if (![...chatSubject.options].some(option => option.value === data.session.subject)) {
                         const option = document.createElement('option');
