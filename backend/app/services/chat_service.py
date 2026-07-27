@@ -4,19 +4,12 @@ from typing import Any, List
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 
+from app.services.api_key_manager import api_key_manager
+
 
 class ChatService:
-    def __init__(self, api_key: str = None):
-        self.api_key = api_key or os.getenv("GOOGLE_API_KEY")
-        if not self.api_key:
-            self.llm = None
-            return
-
-        self.llm = ChatGoogleGenerativeAI(
-            model=os.getenv("GOOGLE_LLM_MODEL"),
-            google_api_key=self.api_key,
-            temperature=0.2,
-        )
+    def __init__(self):
+        pass
 
     def _build_context(self, context_docs: List[Any]) -> str:
         return "\n\n".join(
@@ -37,8 +30,8 @@ class ChatService:
         The prompt keeps the answer grounded, cites sources, and uses a stable
         suggestion section so the API can extract clickable follow-up questions.
         """
-        if not self.llm:
-            yield "Error: GOOGLE_API_KEY is not configured for the AI model."
+        if not api_key_manager.get_next_key():
+            yield "Error: GOOGLE_API_KEYS is not configured for the AI model."
             return
 
         context_text = self._build_context(context_docs)
@@ -146,18 +139,62 @@ Retrieved context:
             ]
         )
 
-        chain = prompt | self.llm
+        max_retries = max(1, api_key_manager.num_keys())
+        for attempt in range(max_retries):
+            api_key = api_key_manager.get_next_key()
+            
+            # Print to terminal for testing/debugging
+            masked_key = f"{api_key[:10]}...{api_key[-5:]}" if len(api_key) > 15 else "INVALID_LENGTH"
+            print(f"[Key Rotation] Attempt {attempt+1}/{max_retries} | Using Key: {masked_key}")
 
-        for chunk in chain.stream(
-            {"context": context_text, "question": question, "subject": subject}
-        ):
-            if isinstance(chunk.content, str):
-                yield chunk.content
-            elif isinstance(chunk.content, list):
-                yield " ".join(
-                    [
-                        item.get("text", "")
-                        for item in chunk.content
-                        if isinstance(item, dict) and "text" in item
-                    ]
+            llm = ChatGoogleGenerativeAI(
+                model=os.getenv("GOOGLE_LLM_MODEL"),
+                google_api_key=api_key,
+                temperature=0.2,
+            )
+            chain = prompt | llm
+
+            try:
+                response_generator = chain.stream(
+                    {"context": context_text, "question": question, "subject": subject}
                 )
+
+                try:
+                    first_chunk = next(response_generator)
+                except StopIteration:
+                    break
+
+                if isinstance(first_chunk.content, str):
+                    yield first_chunk.content
+                elif isinstance(first_chunk.content, list):
+                    yield " ".join(
+                        [
+                            item.get("text", "")
+                            for item in first_chunk.content
+                            if isinstance(item, dict) and "text" in item
+                        ]
+                    )
+
+                for chunk in response_generator:
+                    if isinstance(chunk.content, str):
+                        yield chunk.content
+                    elif isinstance(chunk.content, list):
+                        yield " ".join(
+                            [
+                                item.get("text", "")
+                                for item in chunk.content
+                                if isinstance(item, dict) and "text" in item
+                            ]
+                        )
+                break  # Success
+            except Exception as e:
+                error_msg = str(e).lower()
+                # Catch rate limits, quota, and invalid keys (for testing)
+                if any(x in error_msg for x in ["429", "resource exhausted", "quota", "api key not valid", "400"]):
+                    print(f"[Key Rotation] Failed with key {masked_key}. Reason: {error_msg}. Rotating...")
+                    if attempt == max_retries - 1:
+                        yield f"Error: All API keys have exceeded their rate limits or quotas."
+                    continue
+                else:
+                    yield f"Loi sinh cau tra loi: {str(e)}"
+                    break
