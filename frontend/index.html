@@ -299,7 +299,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
     <script>
-        const API_BASE = "http://127.0.0.1:8000/api/v1";
+        const API_BASE = `http://${window.location.hostname}:8000/api/v1`;
         const md = window.markdownit(); // Khởi tạo Markdown-it
 
 
@@ -435,7 +435,7 @@
 
         async function loadChatSessions() {
             try {
-                const res = await fetch(`${API_BASE}/chat-history/sessions?user_id=${encodeURIComponent(currentUserId)}`);
+                const res = await fetch(`${API_BASE}/chat-history/sessions?user_id=${encodeURIComponent(currentUserId)}`, { cache: 'no-store' });
                 const data = await res.json();
                 chatHistoryList.innerHTML = '';
 
@@ -518,7 +518,7 @@
         async function loadChatSession(sessionId) {
             try {
                 activateChatView();
-                const res = await fetch(`${API_BASE}/chat-history/sessions/${sessionId}/messages?user_id=${encodeURIComponent(currentUserId)}`);
+                const res = await fetch(`${API_BASE}/chat-history/sessions/${sessionId}/messages?user_id=${encodeURIComponent(currentUserId)}`, { cache: 'no-store' });
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
 
@@ -733,7 +733,7 @@
             const list = document.getElementById('doc-list');
             const countSpan = document.getElementById('doc-count');
             try {
-                const res = await fetch(`${API_BASE}/documents/`);
+                const res = await fetch(`${API_BASE}/documents/`, { cache: 'no-store' });
                 const data = await res.json();
                 const count = data.total_count !== undefined ? data.total_count : 0;
                 if(countSpan) countSpan.innerText = `(Tổng số: ${count})`;
@@ -800,7 +800,7 @@
 
         async function loadQuizSubjects() {
             try {
-                const res = await fetch(`${API_BASE}/documents/`);
+                const res = await fetch(`${API_BASE}/documents/`, { cache: 'no-store' });
                 const data = await res.json();
                 
                 if (data.documents && data.documents.length) {
@@ -916,7 +916,7 @@
         async function loadQuizList() {
             const listDiv = document.getElementById('quiz-list');
             try {
-                const res = await fetch(`${API_BASE}/quiz/list`);
+                const res = await fetch(`${API_BASE}/quiz/list`, { cache: 'no-store' });
                 const data = await res.json();
                 
                 if (data.quizzes && data.quizzes.length > 0) {
@@ -945,7 +945,7 @@
 
         async function viewSavedQuiz(filename) {
             try {
-                const res = await fetch(`${API_BASE}/quiz/${filename}`);
+                const res = await fetch(`${API_BASE}/quiz/${filename}`, { cache: 'no-store' });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.detail || "Lỗi tải quiz");
                 
@@ -974,7 +974,7 @@
         async function loadStats() {
             const content = document.getElementById('stats-content');
             try {
-                const res = await fetch(`${API_BASE}/feedback/stats`);
+                const res = await fetch(`${API_BASE}/feedback/stats`, { cache: 'no-store' });
                 const data = await res.json();
                 content.innerHTML = `
                     <p>Tổng số phản hồi: <b>${data.total_feedback}</b></p>
